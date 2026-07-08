@@ -1,0 +1,13 @@
+fastmcp
+pydantic
+pytest
+yfinance
+pandas
+numpy
+repomix
+tavily-python
+groq
+python-dotenv
+langgraph
+langchain
+ddgs
