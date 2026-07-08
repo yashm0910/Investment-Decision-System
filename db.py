@@ -19,6 +19,17 @@ For Horizon deployment:
     /tmp/portfolio_data
 """
 
+"""
+Deployment change:
+- The writable SQLite files are stored under /tmp so Horizon's read-only
+  application directory does not block table creation or inserts.
+- OLD local-only logic (kept for reference):
+    # if os.getenv("HORIZON") or os.getenv("PRODUCTION"):
+    #     BASE_DIR = Path("/tmp")
+    # else:
+    #     BASE_DIR = Path(".")
+"""
+
 BASE_DIR = Path("/tmp")
 
 DATA_FOLDER = BASE_DIR / "portfolio_data"
@@ -45,7 +56,7 @@ def initialize_database():
     """
 
     DATA_FOLDER.mkdir(exist_ok=True)
-    print("Database Path:", DB_PATH.resolve())
+
     conn = sqlite3.connect(DB_PATH)
     conn.close()
 
@@ -63,6 +74,26 @@ def get_connection():
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _ensure_portfolio_table(cursor, table_name: str):
+    """
+    Ensure a user portfolio table exists before any read/write operation.
+
+    Defensive for Horizon-style deployments where a request may land on a fresh
+    worker and the prior create-table call may not have persisted yet.
+    """
+    query = f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_name TEXT NOT NULL,
+        symbol TEXT,
+        buy_price REAL NOT NULL,
+        quantity INTEGER NOT NULL,
+        buy_date TEXT NOT NULL
+    )
+    """
+    cursor.execute(query)
 
 
 # -----------------------------
@@ -134,19 +165,7 @@ def create_portfolio_table(table_name: str):
     conn = get_connection()
     try:
         cursor = conn.cursor()
-
-        query = f"""
-        CREATE TABLE IF NOT EXISTS {table_name} (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            company_name TEXT NOT NULL,
-            symbol TEXT,
-            buy_price REAL NOT NULL,
-            quantity INTEGER NOT NULL,
-            buy_date TEXT NOT NULL
-        )
-        """
-
-        cursor.execute(query)
+        _ensure_portfolio_table(cursor, table_name)
         conn.commit()
 
         return {
@@ -180,6 +199,10 @@ def add_stock(
     conn = get_connection()
     try:
         cursor = conn.cursor()
+
+        # Defensive create: if the create-table call did not persist or the
+        # request lands on a fresh worker, still make the insert succeed.
+        _ensure_portfolio_table(cursor, table_name)
 
         query = f"""
         INSERT INTO {table_name}
@@ -222,6 +245,7 @@ def get_all_stocks(table_name: str):
     conn = get_connection()
     try:
         cursor = conn.cursor()
+        _ensure_portfolio_table(cursor, table_name)
 
         query = f"""
         SELECT * FROM {table_name}
@@ -251,6 +275,7 @@ def delete_stock(
     conn = get_connection()
     try:
         cursor = conn.cursor()
+        _ensure_portfolio_table(cursor, table_name)
 
         query = f"""
         DELETE FROM {table_name}
