@@ -31,10 +31,7 @@ Deployment change:
 # OLD (local-only):
 # RESEARCH_STORE_DIR = Path("research_store")
 
-if os.getenv("HORIZON") or os.getenv("PRODUCTION") or os.getenv("ENV") == "production":
-    BASE_DIR = Path("/tmp")
-else:
-    BASE_DIR = Path(".")
+BASE_DIR = Path("/tmp")
 
 RESEARCH_STORE_DIR = BASE_DIR / "research_store"
 RESEARCH_STORE_DIR.mkdir(parents=True, exist_ok=True)
