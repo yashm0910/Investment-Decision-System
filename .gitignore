@@ -100,6 +100,10 @@ repomix.config.json
 *repomix*.md
 *repomix*.txt
 
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
 # ==================================================
 # Temporary Files
 # ==================================================

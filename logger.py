@@ -1,12 +1,20 @@
 from __future__ import annotations
 
 import logging
-from logging.handlers import RotatingFileHandler
+import sys
 from pathlib import Path
 from datetime import datetime
 
-LOG_DIR = Path("logs")
-LOG_DIR.mkdir(exist_ok=True)
+'''
+Change made for deployment:
+- Removed runtime dependency on writable /app/logs.
+- Switched production logging to StreamHandler(stdout), which is safe for read-only container filesystems.
+- Kept the old file-based logging code commented out for reference.
+'''
+
+# Use /tmp because /app is read-only in deployment environments.
+LOG_DIR = Path("/tmp/logs")
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 def get_logger(name: str) -> logging.Logger:
     """
@@ -31,20 +39,23 @@ def get_logger(name: str) -> logging.Logger:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    file_handler = RotatingFileHandler(
-        log_path,
-        maxBytes=5 * 1024 * 1024,
-        backupCount=5,
-        encoding="utf-8",
-    )
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(logging.INFO)
+    # Old file-based logging kept for reference:
+    # file_handler = RotatingFileHandler(
+    #     log_path,
+    #     maxBytes=5 * 1024 * 1024,
+    #     backupCount=5,
+    #     encoding="utf-8",
+    # )
+    # file_handler.setFormatter(formatter)
+    # file_handler.setLevel(logging.INFO)
+    #
+    # logger.addHandler(file_handler)
 
-    stream_handler = logging.StreamHandler()
+    # New deployment-safe logging: write to stdout instead of the filesystem.
+    stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setFormatter(formatter)
     stream_handler.setLevel(logging.INFO)
 
-    logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
 
     return logger
