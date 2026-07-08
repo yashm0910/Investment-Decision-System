@@ -19,10 +19,7 @@ For Horizon deployment:
     /tmp/portfolio_data
 """
 
-if os.getenv("HORIZON") or os.getenv("PRODUCTION"):
-    BASE_DIR = Path("/tmp")
-else:
-    BASE_DIR = Path(".")
+BASE_DIR = Path("/tmp")
 
 DATA_FOLDER = BASE_DIR / "portfolio_data"
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -48,7 +45,7 @@ def initialize_database():
     """
 
     DATA_FOLDER.mkdir(exist_ok=True)
-
+    print("Database Path:", DB_PATH.resolve())
     conn = sqlite3.connect(DB_PATH)
     conn.close()
 
