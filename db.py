@@ -1,14 +1,38 @@
 import re
 import sqlite3
 from pathlib import Path
+import os
 
+# -----------------------------
+# STORAGE PATHS
+# -----------------------------
+"""
+Deployment change:
+Horizon mounts the application directory (/app) as read-only.
+Any SQLite database, logs, or cache folders inside the project cannot
+be written to.
+
+For local development:
+    ./portfolio_data
+
+For Horizon deployment:
+    /tmp/portfolio_data
+"""
+
+if os.getenv("HORIZON") or os.getenv("PRODUCTION"):
+    BASE_DIR = Path("/tmp")
+else:
+    BASE_DIR = Path(".")
+
+DATA_FOLDER = BASE_DIR / "portfolio_data"
+DATA_FOLDER.mkdir(parents=True, exist_ok=True)
+
+DB_PATH = DATA_FOLDER / "portfolio.db"
 
 # -----------------------------
 # DATABASE + FOLDER SETUP
 # -----------------------------
 
-DATA_FOLDER = Path("portfolio_data")
-DB_PATH = DATA_FOLDER / "portfolio.db"
 
 # Only allow simple identifier-safe table names.
 # Adjust the pattern if you need a stricter format (e.g. must end in "_portfolio").

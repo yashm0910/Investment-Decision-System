@@ -19,7 +19,26 @@ from uuid import uuid4
 from logger import get_logger
 
 CACHE_TTL_SECONDS = 3600  
-RESEARCH_STORE_DIR = Path("research_store")
+
+"""
+Deployment change:
+- Horizon mounts the application directory as read-only.
+- The old local path `Path("research_store")` is preserved below as a comment
+  for reference, but the active cache directory is redirected to /tmp in
+  production so the research cache can be created and updated safely.
+"""
+
+# OLD (local-only):
+# RESEARCH_STORE_DIR = Path("research_store")
+
+if os.getenv("HORIZON") or os.getenv("PRODUCTION") or os.getenv("ENV") == "production":
+    BASE_DIR = Path("/tmp")
+else:
+    BASE_DIR = Path(".")
+
+RESEARCH_STORE_DIR = BASE_DIR / "research_store"
+RESEARCH_STORE_DIR.mkdir(parents=True, exist_ok=True)
+
 PIPELINE_VERSION = "v2.0"
 
 MAX_ARTICLES = 30
